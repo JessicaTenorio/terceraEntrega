@@ -1,0 +1,21 @@
+{{>header}}
+
+<p>
+    Ver inscritos como coordinador
+</p>
+<form action="/cambiar" method="post">
+     <p>Seleccione el curso para actualizar su estado a Cerrado:</p>
+    <div class="form-group row">
+    <label for="Curso" class="col-sm-2 col-form-label">Curso:</label>
+    <div class="col-sm-6">
+      {{{selectDisponibles listado}}}
+    </div>
+  </div>
+    <button class="btn btn-primary">Cambiar Estado</button>
+
+    {{response}}<br><br>
+  
+</form>
+
+
+{{>footer}}
