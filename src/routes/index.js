@@ -358,16 +358,7 @@ app.post('/eliminar', (req, res)=>{
     let lista;
     let response;
     let curs;
-    Curso.find({}).exec((err,respuesta)=>{          
-        if(err){ 
-            console.log(err)
-            lista= null           
-        }else{                           
-            lista= respuesta           
-        }
-    })    
-    Matricula.deleteOne({idUsuario:req.body.identidad2, idCurso:req.body.curso2}).exec((err,respuesta)=>{
-        
+    Matricula.deleteOne({idUsuario:req.body.identidad2, idCurso:req.body.curso2}).exec((err,respuesta)=>{        
         if(err){
             console.log(err)
             response= "Error al eliminar matricula"            
@@ -389,15 +380,13 @@ app.post('/eliminar', (req, res)=>{
     Matricula.find({}).exec((err,respuesta)=>{        
         if(err){
             console.log(err)
-            res.render ('eliminaInscrito',{                
-                listado: lista,
+            res.render ('eliminapost',{                
                 response: response,
                 cursos: curs,
                 matriculas: null
             })            
         }else{
-            res.render ('eliminaInscrito',{ 
-                listado: lista,
+            res.render ('eliminapost',{ 
                 response: response,
                 cursos: curs,
                 matriculas: respuesta
