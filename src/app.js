@@ -4,7 +4,6 @@ const app = express ();
 const path = require('path');
 const bodyParser= require('body-parser');
 const mongoose = require('mongoose');
-const port = process.env.PORT || 3000;
 //### Para usar las variables de sesión
 const session = require('express-session')
 var MemoryStore = require('memorystore')(session)
@@ -58,7 +57,7 @@ mongoose.connect(process.env.URLDB, {useNewUrlParser: true, useCreateIndex: true
     console.log("conectado");
 });
 
-app.listen(port, ()=>{
-    console.log('Servidor escuchando en el puerto '+ port)
+app.listen(process.env.PORT, ()=>{
+    console.log('Servidor escuchando en el puerto '+ process.env.PORT)
 })
 
