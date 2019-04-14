@@ -4,9 +4,11 @@ const path = require('path')
 const hbs = require ('hbs')
 const Curso = require('./../models/curso')
 const Usuario = require('./../models/usuario')
+const Matricula = require('./../models/matricula')
 const dirViews= path.join(__dirname, '../../template/views')
 const dirPartials = path.join(__dirname, '../../template/partials')
 const bcrypt = require('bcrypt');
+
 
 
 require('./../helpers/helpers')
@@ -61,25 +63,27 @@ app.post('/ingresar', (req,res)=>{
 
         if(!resultado){
             return res.render('ingresar',{
-                mensaje: "**Usuario o clave incorrecta"
-               
+                mensaje: "**Usuario o clave incorrecta"               
             })  
         }
         
         if(!bcrypt.compareSync(req.body.password, resultado.password)){
            return res.render('ingresar',{
-                mensaje: "**Usuario o clave incorrecta"
-               
+                mensaje: "**Usuario o clave incorrecta"               
             })
-
-        }
-        
+        }        
         req.session.usuario = resultado._id
         req.session.nombre = resultado.nombre
+        req.session.rol = resultado.rol
+        req.session.identidad = resultado.identidad
+        req.session.correo = resultado.correo
+        req.session.telefono = resultado.telefono
+
         res.render('ingresar',{
            mensaje: "BIENVENIDO " + resultado.nombre,
            session:true,
-           nombre: req.session.nombre              
+           nombre: req.session.nombre,
+           rol: req.session.rol              
         })        
     })
 })
@@ -136,37 +140,144 @@ app.get('/verCurso', (req,res)=>{
     })
 })
 
-app.get('/verInscritos', (req, res)=>{
-    res.render('verInscritos')
-});
-
-app.post('/cambiar', (req, res)=>{
+app.get('/inscribir', (req,res)=>{
+    
     Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
+        
         if(err){
             console.log(err)
-            res.render('verInscritos',{
-                listado : null
+            res.render ('inscripcion',{
+                identidad : req.session.identidad,
+                nombre : req.session.nombre,
+                correo : req.session.correo,
+                telefono : req.session.telefono,
+                listado: null
             })
             
         }else{
-            res.render('verInscritos',{
-                listado : respuesta
+            res.render ('inscripcion',{
+                identidad : req.session.identidad,
+                nombre : req.session.nombre,
+                correo : req.session.correo,
+                telefono : req.session.telefono,
+                listado: respuesta
             })
         }
+    })    
+})
+
+app.post('/inscribir', (req, res)=>{    
+
+    let matricula=new Matricula({
+        idUsuario: req.session.identidad,          
+        idCurso: req.body.curso,
+        nombre: req.session.nombre,
+        correo: req.session.correo,
+        telefono: req.session.telefono 
+    });   
+
+    Matricula.find({idUsuario:req.session.identidad, idCurso:req.body.curso}).exec((err,respuesta)=>{
+       
+        if(err){
+            console.log(err)
+            return res.render ('indexpost',{
+                response: "Error realizando consulta en la BD"
+            })            
+        }
+        if(respuesta.length>0){ 
+            
+            return res.render ('indexpost',{
+                response: "Usted ya se encuentra matriculado en el curso seleccionado"
+            }) 
+            
+        }else{
+            matricula.save( (err, resultado)=>{
+                if(err){
+                     res.render('indexpost', {
+                        response: "Error registrando la matricula "+err
+                     })
+                   
+                }else{
+                    res.render('indexpost', {
+                        response: "**Se ha matriculado exitosamente al curso"
+                     })        
+                }        
+            }) 
+        }        
     })
+});
+
+app.get('/verInscritos', (req, res)=>{
+    let list;
+    Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            list=null;          
+        }else{
+            list=respuesta;
+        }
+    });
+    Curso.find({}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            res.render ('verInscritos',{                
+                listado: null,
+                cursos: null
+            })            
+        }else{
+            res.render ('verInscritos',{ 
+                listado: list,              
+                cursos: respuesta
+            })
+        }
+    });   
+});
+
+app.post('/cambiar', (req, res)=>{
+    let list;
+    let resp;
     Curso.updateOne({idCurso: req.body.curso}, {$set:  {estado: "Cerrado" }},
      (err, resultado)=>{
          if(err){
-            res.render('verInscritos',{
-                response : "Error al actualizar"
-            })
+           resp = "Error al actualizar curso"            
          }else{
-            res.render('verInscritos',{
-                response : "Actualizó correctamente"
-            }) 
+            resp = "Actualizó correctamente"            
          }        
      })
+     
+    Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            list=null;          
+        }else{
+            list=respuesta;
+        }
+    });
+    Curso.find({}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            res.render ('verInscritos',{                
+                listado: null,
+                cursos: null,
+                response: resp
+            })            
+        }else{
+            res.render ('verInscritos',{ 
+                listado: list,              
+                cursos: respuesta,
+                response: resp
+            })
+        }
+    });   
     
+});
+
+app.get('/eliminaInscrito', (req, res)=>{
+    res.render('eliminaInscrito')
 });
 
 
@@ -175,7 +286,7 @@ app.get('/salir', (req, res)=>{
         if(err) return console.log(err)
     })
     res.redirect('/')
-})
+});
 
 
 app.get('*', (req, res)=>{

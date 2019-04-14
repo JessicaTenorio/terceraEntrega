@@ -1,4 +1,6 @@
 const hbs = require('hbs');
+const Matricula = require('./../models/matricula');
+const Curso = require('./../models/curso');
 
 
 hbs.registerHelper('listarDisponibles', (listado)=>{   
@@ -41,6 +43,24 @@ hbs.registerHelper('listarDisponibles', (listado)=>{
  
  });
 
+ hbs.registerHelper('selectCursos', ()=>{
+   let texto="";
+  Curso.find({}).exec((err,respuesta)=>{  
+
+  if(respuesta.length>0){
+      texto="<select name='curso2' class='form-control' id='exampleFormControlSelect1'>";
+      respuesta.forEach(curso=>{
+          texto=texto+
+            `<option value="${curso.idCurso}">${curso.nombre}</option>`
+      })
+      texto=texto+` </select>`     
+  }else{
+      texto="No hay cursos"
+  }
+
+}) 
+ return texto;
+});
 
 
  hbs.registerHelper('selectDisponibles', (listado)=>{
@@ -56,12 +76,11 @@ hbs.registerHelper('listarDisponibles', (listado)=>{
       texto="No hay cursos disponibles"
   }
  return texto;
-})
+});
 
-
-
-function listarInscritosForm (idCurso) {   
+function listarInscritosForm (id_curso) {   
   let texto2="";
+  
   texto2="<table class='table table-striped'>\
   <thead class='thead-dark'> \
   <th> Documento </th>\
@@ -70,25 +89,33 @@ function listarInscritosForm (idCurso) {
   <th> Telefono </th>\
   </thead>\
   <tbody>";
-    let inscritos=funciones.inscritosCurso(idCurso);
-                    inscritos.forEach(ins=>{
-                        texto2=texto2+`<tr>
-                        <td> ${ins.identidad}</td>
-                        <td> ${ins.nombre}</td>
-                        <td> ${ins.correo}</td>
-                        <td> ${ins.telefono}</td>
-                        </tr>`;          
-                    })
-                    texto2=texto2+ '</tbody></table>'; 
+  Matricula.find({idCurso:id_curso}).exec((err,respuesta)=>{
+     
+    if(err){
+         console.log(err)        
+         return texto2= "Error realizando consulta en la BD";                   
+    }else{
+          respuesta.forEach(ins=>{            
+              texto2=texto2+`<tr>
+              <td> ${ins.identidad}</td>
+              <td> ${ins.nombre}</td>
+              <td> ${ins.correo}</td>
+              <td> ${ins.telefono}</td>
+              </tr>`;          
+          })   
+    }
+  })
+
+  texto2=texto2+ '</tbody></table>'; 
+
   return texto2;
 };
 
 
-hbs.registerHelper('listarCursosInscritos', ()=>{      
+hbs.registerHelper('listarCursosInscritos', (cursos)=>{      
   let texto="";
   try{
       
-      let cursos= require('./listado.json') 
        texto="<div class='accordion' id='accordionExample2'>";
      
        let i=1;
@@ -101,10 +128,8 @@ hbs.registerHelper('listarCursosInscritos', ()=>{
                  
                  <div class="card-body"> 
                     ${listarInscritosForm(curso.idCurso)}
-                 </div>`
-              
-       })        
-       
+                 </div>`              
+       })               
   }catch(error){
        texto="** No hay cursos"
   }
@@ -112,3 +137,7 @@ hbs.registerHelper('listarCursosInscritos', ()=>{
   return texto;
 
 });
+
+
+
+

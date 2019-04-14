@@ -11,10 +11,11 @@
       {{{selectDisponibles listado}}}
     </div>
   </div>
-    <button class="btn btn-primary">Cambiar Estado</button>
-
+    {{#if listado}}
+       <button class="btn btn-primary">Cambiar Estado</button>
+    {{/if}}
     {{response}}<br><br>
-  
+    <p>{{{listarCursosInscritos cursos}}}</p>
 </form>
 
 
