@@ -1,6 +1,4 @@
 const hbs = require('hbs');
-const Matricula = require('./../models/matricula');
-const Curso = require('./../models/curso');
 
 
 hbs.registerHelper('listarDisponibles', (listado)=>{   
@@ -43,13 +41,13 @@ hbs.registerHelper('listarDisponibles', (listado)=>{
  
  });
 
- hbs.registerHelper('selectCursos', ()=>{
-   let texto="";
-  Curso.find({}).exec((err,respuesta)=>{  
 
-  if(respuesta.length>0){
+ hbs.registerHelper('selectCursos',(listado)=>{
+   let texto;   
+ try{
+  if(listado.length>0){
       texto="<select name='curso2' class='form-control' id='exampleFormControlSelect1'>";
-      respuesta.forEach(curso=>{
+      listado.forEach(curso=>{      
           texto=texto+
             `<option value="${curso.idCurso}">${curso.nombre}</option>`
       })
@@ -57,9 +55,11 @@ hbs.registerHelper('listarDisponibles', (listado)=>{
   }else{
       texto="No hay cursos"
   }
+}catch(err){
+  texto="Error listando cursos "+err
 
-}) 
- return texto;
+}
+  return texto; 
 });
 
 
@@ -78,47 +78,38 @@ hbs.registerHelper('listarDisponibles', (listado)=>{
  return texto;
 });
 
-function listarInscritosForm (id_curso) {   
-  let texto2="";
-  
+function listarInscritosForm (id_curso, matriculas) {   
   texto2="<table class='table table-striped'>\
-  <thead class='thead-dark'> \
-  <th> Documento </th>\
-  <th> Nombre </th>\
-  <th> Correo </th>\
-  <th> Telefono </th>\
-  </thead>\
-  <tbody>";
-  Matricula.find({idCurso:id_curso}).exec((err,respuesta)=>{
-     
-    if(err){
-         console.log(err)        
-         return texto2= "Error realizando consulta en la BD";                   
-    }else{
-          respuesta.forEach(ins=>{            
+    <thead class='thead-dark'> \
+    <th> Documento </th>\
+    <th> Nombre </th>\
+    <th> Correo </th>\
+    <th> Telefono </th>\
+    </thead>\
+    <tbody>";  
+
+          matriculas.forEach(ins=>{
+            if(ins.idCurso==id_curso){                       
               texto2=texto2+`<tr>
-              <td> ${ins.identidad}</td>
+              <td> ${ins.idUsuario}</td>
               <td> ${ins.nombre}</td>
               <td> ${ins.correo}</td>
               <td> ${ins.telefono}</td>
-              </tr>`;          
-          })   
-    }
-  })
+              </tr>`; 
+            }         
+          }) 
+          texto2=texto2+ '</tbody></table>'; 
 
-  texto2=texto2+ '</tbody></table>'; 
-
-  return texto2;
+   return texto2;
 };
 
 
-hbs.registerHelper('listarCursosInscritos', (cursos)=>{      
+hbs.registerHelper('listarCursosInscritos', (cursos, matriculas)=>{      
   let texto="";
   try{
       
        texto="<div class='accordion' id='accordionExample2'>";
      
-       let i=1;
        cursos.forEach(curso=>{
           
            texto=texto +
@@ -127,17 +118,13 @@ hbs.registerHelper('listarCursosInscritos', (cursos)=>{
                      Estado: ${curso.estado} <br>                      
                  
                  <div class="card-body"> 
-                    ${listarInscritosForm(curso.idCurso)}
+                    ${listarInscritosForm(curso.idCurso, matriculas)}
                  </div>`              
        })               
   }catch(error){
-       texto="** No hay cursos"
+       texto="** Error listando cursos"
   }
 
   return texto;
 
 });
-
-
-
-

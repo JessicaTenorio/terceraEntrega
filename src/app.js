@@ -36,7 +36,8 @@ app.use((req, res, next)=>{
     if(req.session.usuario){
         res.locals.session = true
         res.locals.nombre = req.session.nombre
-        res.locals.rol= req.session.rol
+        res.locals.rolC= req.session.rolCoordinador
+        res.locals.rolA= req.session.rolAspirante 
     }
     next()
 })

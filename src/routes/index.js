@@ -9,8 +9,6 @@ const dirViews= path.join(__dirname, '../../template/views')
 const dirPartials = path.join(__dirname, '../../template/partials')
 const bcrypt = require('bcrypt');
 
-
-
 require('./../helpers/helpers')
 
 //hbs
@@ -27,7 +25,14 @@ app.get('/', (req, res)=>{
 });
 
 app.get('/registroUsuario', (req, res)=>{
-    res.render('registroUsuario')
+    if(!req.session.usuario){
+       res.render('registroUsuario')
+    }else{
+        res.render('error',{
+            titulo:"Error 404",
+        })  
+    }
+    
 });
 
 app.post('/registrar', (req, res)=>{
@@ -71,10 +76,22 @@ app.post('/ingresar', (req,res)=>{
            return res.render('ingresar',{
                 mensaje: "**Usuario o clave incorrecta"               
             })
-        }        
+        }   
+
+        if(resultado.rol=='Coordinador'){
+            req.session.rolCoordinador=true;
+        }else{
+            req.session.rolCoordinador=false; 
+        }
+
+        if(resultado.rol=='Aspirante'){
+            req.session.rolAspirante=true;
+        }else{
+            req.session.rolAspirante=false; 
+        }
+
         req.session.usuario = resultado._id
         req.session.nombre = resultado.nombre
-        req.session.rol = resultado.rol
         req.session.identidad = resultado.identidad
         req.session.correo = resultado.correo
         req.session.telefono = resultado.telefono
@@ -83,14 +100,21 @@ app.post('/ingresar', (req,res)=>{
            mensaje: "BIENVENIDO " + resultado.nombre,
            session:true,
            nombre: req.session.nombre,
-           rol: req.session.rol              
+           rolC: req.session.rolCoordinador,
+           rolA: req.session.rolAspirante            
         })        
     })
 })
 
 
 app.get('/registroCurso', (req, res)=>{
-    res.render('registroCurso')
+    if(req.session.rolCoordinador){
+        res.render('registroCurso')
+    }else{
+        res.render('error',{
+            titulo:"Error 404",
+        }) 
+    }
 });
 
 app.post('/guardar', (req, res)=>{
@@ -141,7 +165,7 @@ app.get('/verCurso', (req,res)=>{
 })
 
 app.get('/inscribir', (req,res)=>{
-    
+  if(req.session.rolAspirante){  
     Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
         
         if(err){
@@ -163,7 +187,12 @@ app.get('/inscribir', (req,res)=>{
                 listado: respuesta
             })
         }
-    })    
+    }) 
+ } else{
+    res.render('error',{
+        titulo:"Error 404",
+    })
+ } 
 })
 
 app.post('/inscribir', (req, res)=>{    
@@ -208,7 +237,9 @@ app.post('/inscribir', (req, res)=>{
 });
 
 app.get('/verInscritos', (req, res)=>{
+  if(req.session.rolCoordinador){   
     let list;
+    let curs;
     Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
         
         if(err){
@@ -222,17 +253,33 @@ app.get('/verInscritos', (req, res)=>{
         
         if(err){
             console.log(err)
+            curs = null
+                      
+        }else{           
+            curs= respuesta          
+        }
+    }); 
+    Matricula.find({}).exec((err,respuesta)=>{        
+        if(err){
+            console.log(err)
             res.render ('verInscritos',{                
                 listado: null,
-                cursos: null
+                cursos: null,
+                matriculas: null
             })            
         }else{
             res.render ('verInscritos',{ 
                 listado: list,              
-                cursos: respuesta
+                cursos: curs,
+                matriculas: respuesta
             })
         }
-    });   
+    }); 
+}else{
+    res.render('error',{
+        titulo:"Error 404",
+    })
+}   
 });
 
 app.post('/cambiar', (req, res)=>{
@@ -247,7 +294,7 @@ app.post('/cambiar', (req, res)=>{
          }        
      })
      
-    Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
+     Curso.find({estado:"Disponible"}).exec((err,respuesta)=>{
         
         if(err){
             console.log(err)
@@ -260,25 +307,104 @@ app.post('/cambiar', (req, res)=>{
         
         if(err){
             console.log(err)
+            curs = null
+                      
+        }else{           
+            curs= respuesta          
+        }
+    }); 
+    Matricula.find({}).exec((err,respuesta)=>{        
+        if(err){
+            console.log(err)
             res.render ('verInscritos',{                
                 listado: null,
                 cursos: null,
+                matriculas: null,
                 response: resp
             })            
         }else{
             res.render ('verInscritos',{ 
                 listado: list,              
-                cursos: respuesta,
+                cursos: curs,
+                matriculas: respuesta,
                 response: resp
             })
         }
-    });   
-    
+    });    
 });
 
 app.get('/eliminaInscrito', (req, res)=>{
-    res.render('eliminaInscrito')
+  if(req.session.rolCoordinador){  
+    Curso.find({}).exec((err,respuesta)=>{          
+        if(err){ 
+            console.log(err)
+            return res.render('eliminaInscrito',{
+                listado: null
+            })
+        }else{              
+             res.render('eliminaInscrito',{                
+                listado: respuesta
+            }) 
+        }
+    })
+  }else{
+    res.render('error',{
+        titulo:"Error 404",
+    }) 
+  }    
 });
+
+app.post('/eliminar', (req, res)=>{
+    let lista;
+    let response;
+    let curs;
+    Curso.find({}).exec((err,respuesta)=>{          
+        if(err){ 
+            console.log(err)
+            lista= null           
+        }else{                           
+            lista= respuesta           
+        }
+    })    
+    Matricula.deleteOne({idUsuario:req.body.identidad2, idCurso:req.body.curso2}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            response= "Error al eliminar matricula"            
+        }else if(respuesta.deletedCount==0){
+              response= 'No se encontro registro con el documento de identidad '+req.body.identidad2+ ' para el curso seleccionado'            
+        }else{       
+            response= 'Eliminación exitosa '
+        }        
+    })     
+    Curso.find({idCurso:req.body.curso2}).exec((err,respuesta)=>{
+        
+        if(err){
+            console.log(err)
+            curs = null                      
+        }else{           
+            curs= respuesta          
+        }
+    }); 
+    Matricula.find({}).exec((err,respuesta)=>{        
+        if(err){
+            console.log(err)
+            res.render ('eliminaInscrito',{                
+                listado: lista,
+                response: response,
+                cursos: curs,
+                matriculas: null
+            })            
+        }else{
+            res.render ('eliminaInscrito',{ 
+                listado: lista,
+                response: response,
+                cursos: curs,
+                matriculas: respuesta
+            })
+        }
+    });    
+})       
 
 
 app.get('/salir', (req, res)=>{
