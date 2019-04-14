@@ -12,13 +12,17 @@ var MemoryStore = require('memorystore')(session)
 const directoriopublico = path.join(__dirname, '../public')
 const dirNode_modules = path.join(__dirname, '../node_modules')
 
+if (typeof localStorage === "undefined" || localStorage === null) {
+    var LocalStorage = require('node-localstorage').LocalStorage;
+    localStorage = new LocalStorage('./scratch');
+}
 
 //Static
 app.use(express.static(directoriopublico));
-app.use('/css', express.static(dirNode_modules + '/bootstrap/dist/css'));
+//app.use('/css', express.static(dirNode_modules + '/bootstrap/dist/css'));
 app.use('/js', express.static(dirNode_modules + '/jquery/dist'));
 app.use('/js', express.static(dirNode_modules + '/popper.js/dist'));
-app.use('/js', express.static(dirNode_modules + '/bootstrap/dist/js'));
+//app.use('/js', express.static(dirNode_modules + '/bootstrap/dist/js'));
 
 
 app.use(session({
